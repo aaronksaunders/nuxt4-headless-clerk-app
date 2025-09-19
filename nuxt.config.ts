@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   // Auto-import Clerk Vue composables
   imports: {
     dirs: ["composables/**"],
+    global: true,
   },
 
   // Configure auto-imports for Clerk Vue

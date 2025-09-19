@@ -275,11 +275,18 @@ export const useClerkAuth = () => {
     try {
       const token = await getToken();
       if (token) {
-        await fetch("/api/auth/exchange", {
+        console.log("🔄 Exchanging token for server session...");
+        const response = await fetch("/api/auth/exchange", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         });
+
+        if (response.ok) {
+          console.log("✅ Token exchanged successfully");
+        } else {
+          console.error("❌ Token exchange failed:", response.status);
+        }
       }
     } catch (e) {
       console.error("Token exchange failed:", e);
@@ -289,12 +296,20 @@ export const useClerkAuth = () => {
   // Call exchange on client load if a session already exists
   if (import.meta.client) {
     const exchangedOnce = ref(false);
+    let refreshInterval: NodeJS.Timeout | null = null;
+
     watch(
       [isSignedIn],
       async ([signedIn]) => {
         if (signedIn && !exchangedOnce.value) {
           await exchangeToken();
           exchangedOnce.value = true;
+
+          // Clerk handles token refresh automatically every 50 seconds
+          // We only need to sync with server on user actions, not continuously
+        } else if (!signedIn && refreshInterval) {
+          clearInterval(refreshInterval);
+          refreshInterval = null;
         }
       },
       { immediate: true }
@@ -315,6 +330,15 @@ export const useClerkAuth = () => {
     { immediate: true }
   );
 
+  /**
+   * Manually sync current token with server
+   */
+  const syncWithServer = async () => {
+    if (isSignedIn.value) {
+      await exchangeToken();
+    }
+  };
+
   return {
     // State
     isSignedIn: computed(() => isSignedIn.value),
@@ -333,5 +357,6 @@ export const useClerkAuth = () => {
     getUserProfile,
     getSessionInfo,
     setSessionCookie,
+    syncWithServer,
   };
 };

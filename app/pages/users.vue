@@ -91,12 +91,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useClerkAuth } from "../composables/useClerkAuth";
+import { useRequestEvent, useState, navigateTo } from "nuxt/app";
 
-// Meta - no middleware needed for demo
-definePageMeta({
-  // middleware: "auth", // Commented out for demo
-});
+// Page configuration - no middleware needed for demo
 
 // Get user data from server middleware (already authenticated)
 const event = useRequestEvent();
@@ -105,9 +104,12 @@ const serverUser = event?.context?.user || null;
 // Use SSR-friendly state to avoid hydration mismatch
 const userData = useState("user-data", () => serverUser);
 
+// Use Clerk auth composable to ensure token exchange
+const { isSignedIn, syncWithServer } = useClerkAuth();
+
 // Simple API test
 const apiLoading = ref(false);
-const apiResponse = ref(null);
+const apiResponse = ref<any>(null);
 
 const testServerAPI = async () => {
   apiLoading.value = true;
@@ -120,4 +122,24 @@ const testServerAPI = async () => {
     apiLoading.value = false;
   }
 };
+
+// Ensure token is synced with server on page load
+onMounted(async () => {
+  console.log("🏠 Users page mounted");
+
+  if (isSignedIn.value) {
+    console.log("🔄 User is signed in, syncing with server...");
+    try {
+      await syncWithServer();
+      console.log("✅ Token synced with server");
+
+      // Refresh the page to get updated user data from server
+      await navigateTo("/users", { replace: true });
+    } catch (error) {
+      console.error("❌ Failed to sync with server:", error);
+    }
+  } else {
+    console.log("❌ User not signed in");
+  }
+});
 </script>

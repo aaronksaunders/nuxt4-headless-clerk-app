@@ -67,6 +67,14 @@
             <!-- Authenticated Actions -->
             <div v-else class="space-y-4">
               <button
+                @click="testTokenRefresh"
+                :disabled="authLoading"
+                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {{ authLoading ? "Syncing..." : "Test Token Sync" }}
+              </button>
+
+              <button
                 @click="testProtectedAPI"
                 :disabled="apiLoading"
                 class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
@@ -117,13 +125,12 @@
 /**
  * Main page demonstrating Clerk headless authentication with token passing
  */
-// ClerkProvider is not available in @clerk/vue, we'll use a different approach
+import { ref, watch, onMounted } from "vue";
+import { useClerkAuth } from "../composables/useClerkAuth";
+import { useHead } from "nuxt/app";
 
-// Apply guest middleware following Nuxt 4 pattern
-definePageMeta({
-  // middleware: "guest",
-  ssr: false,
-});
+// Page configuration
+// ssr: false is handled by routeRules in nuxt.config.ts
 
 // Meta tags
 useHead({
@@ -145,6 +152,7 @@ const {
   handleSignIn: signIn,
   handleSignUp: signUp,
   handleSignOut: signOut,
+  syncWithServer,
 } = useClerkAuth();
 
 // UI state
@@ -167,7 +175,7 @@ const handleSignIn = async (email: string, password: string) => {
 
     if (result.success) {
       console.log("✅ Sign in successful");
-      // The watcher in useClerkAuth will handle the redirect
+      // The composable handles session establishment automatically
     } else {
       error.value = result.error || "Sign in failed";
     }
@@ -192,15 +200,18 @@ const handleSignUp = async (
   apiResponse.value = null;
 
   try {
-    const result = await signUp(email, password, firstName, lastName);
+    const result = await signUp(
+      email,
+      password,
+      firstName || "",
+      lastName || ""
+    );
 
     if (result.success) {
       console.log("✅ Sign up successful");
       if (result.requiresVerification) {
         console.log("📧 Email verification required");
         // User will be redirected to verification page
-      } else {
-        // The watcher in useClerkAuth will handle the redirect
       }
     } else {
       error.value = result.error || "Sign up failed";
@@ -236,6 +247,30 @@ const handleSignOut = async () => {
 };
 
 /**
+ * Test token sync with server
+ */
+const testTokenRefresh = async () => {
+  authLoading.value = true;
+  error.value = "";
+  apiResponse.value = null;
+
+  try {
+    console.log("🔄 Testing manual token sync with server...");
+    await syncWithServer();
+    console.log("✅ Token synced successfully");
+    apiResponse.value = {
+      message: "Token sync successful",
+      timestamp: new Date().toISOString(),
+    };
+  } catch (err: any) {
+    error.value = err.message || "Token sync failed";
+    console.error("❌ Token sync failed:", err);
+  } finally {
+    authLoading.value = false;
+  }
+};
+
+/**
  * Test protected API call with token
  */
 const testProtectedAPI = async () => {
@@ -264,5 +299,13 @@ watch(showSignUp, () => {
 // Page mounted
 onMounted(() => {
   console.log("🏠 Page mounted");
+
+  // If user is signed in, the useClerkAuth composable will automatically
+  // handle token exchange and session establishment
+  if (isSignedIn.value) {
+    console.log(
+      "🔄 User is signed in - auto-refresh will happen via useClerkAuth"
+    );
+  }
 });
 </script>
