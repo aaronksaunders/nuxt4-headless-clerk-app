@@ -390,13 +390,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Nuxt](https://nuxt.com/) for the amazing framework
 - [Vue](https://vuejs.org/) for the reactive framework
 
-## 📞 Support
+## Author
 
-If you encounter any issues or have questions:
+Created by Aaron K. Saunders
 
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Search existing [GitHub Issues](https://github.com/your-repo/issues)
-3. Create a new issue with detailed information
+- 🎥 [YouTube Channel](https://www.youtube.com/channel/UCMCcqbJpyL3LAv3PJeYz2bg/)
+- 🐦 [Twitter](https://x.com/aaronksaunders)
+- 💼 [LinkedIn](https://www.linkedin.com/in/aaronksaunders/)
+- 🌐 [GitHub](https://github.com/aaronksaunders)
 
 ---
 
